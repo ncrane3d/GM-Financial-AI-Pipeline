@@ -13,6 +13,12 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
+# Pipeline variables (you can also define variables in Azure DevOps UI or use Azure Key Vault for sensitive info)
+variables:
+  AZURE_OPENAI_KEY: $(OpenAI_API_Key)  # Use a secret variable from Azure DevOps
+  AZURE_OPENAI_ENDPOINT: "https://<your-openai-endpoint>.azure.openai.azure.com/"
+  AZURE_OPENAI_MODEL: "gpt-4"  # Specify the model you want to use (e.g., gpt-3.5, gpt-4)
+
 steps:
 - script: echo Hello, world!
   displayName: 'Run a one-line script'
@@ -21,3 +27,30 @@ steps:
     echo Add other tasks to build, test, and deploy your project.
     echo See https://aka.ms/yaml
   displayName: 'Run a multi-line script'
+
+- script: |
+    echo "Invoking Azure OpenAI GPT Model..."
+
+    # Set the environment variables
+    export AZURE_OPENAI_KEY=$(8eqfFIZqAAoiAIuz0Cw8f0fWrw3FcFRfJBx3yBUYsYG32bZLaKyNJQQJ99BCACHYHv6XJ3w3AAAAACOGTLxJ)
+    export AZURE_OPENAI_ENDPOINT=$(https://ai-ncrane3d0319ai135506223579.openai.azure.com/openai/deployments/gpt-4/chat/completions?api-version=2025-01-01-preview)
+    export AZURE_OPENAI_MODEL=$(gpt-4)
+
+    # Example prompt to GPT-4
+    RESPONSE=$(curl -X POST "$AZURE_OPENAI_ENDPOINT/openai/deployments/$AZURE_OPENAI_MODEL/completions?api-version=2023-03-15-preview" \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $AZURE_OPENAI_KEY" \
+      -d '{
+        "prompt": "Hello, GPT! What is the capital of Colorado?",
+        "max_tokens": 100
+      }')
+
+    echo "Response from GPT: $RESPONSE"
+  displayName: 'Invoke GPT-4 with Azure OpenAI'
+
+# 6. Post-deployment tasks (Optional)
+- script: |
+    echo "Pipeline complete! You can now visit your deployed application."
+  displayName: 'Post-deployment'
+
+
