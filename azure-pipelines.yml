@@ -13,20 +13,43 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
-# Pipeline variables (you can also define variables in Azure DevOps UI or use Azure Key Vault for sensitive info)
 variables:
-  AZURE_OPENAI_KEY: $(OpenAI_API_Key)  # Use a secret variable from Azure DevOps
+  AZURE_OPENAI_KEY: $(OpenAI_API_Key)  
   AZURE_OPENAI_ENDPOINT: "https://<your-openai-endpoint>.azure.openai.azure.com/"
-  AZURE_OPENAI_MODEL: "gpt-4"  # Specify the model you want to use (e.g., gpt-3.5, gpt-4)
+  AZURE_OPENAI_MODEL: "gpt-4"
+  # SonarQube configuration
+  SONARQUBE_URL: 'https://sonarcloud.io'
+  SONARQUBE_PROJECT_KEY: 'ncrane3d_GM-Financial-AI-Pipeline'
+  SONARQUBE_PROJECT_NAME: 'GM-Financial-AI-Pipeline'
+  SONARQUBE_TOKEN: $(c2ecd163b60b777543929403d936fc06409f060a)  
+  SONARQUBE_REPORT_PATH: '$(Build.ArtifactStagingDirectory)/sonar-report.txt' 
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+- checkout: self
+  fetchDepth: 1
 
+# Run Build or Test (if needed for analysis?)
 - script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    echo "Building the project..."
+    ./mvnw spring-boot:run 
+  displayName: 'Build Project'
+
+# Run SonarCloud analysis 
+- task: SonarCloudAnalyze@3
+  inputs:
+    jdkversion: 'JAVA_HOME'
+
+# Generate and Save the SonarCloud Report to a File
+- script: |
+    echo "Fetching SonarCloud analysis report..."
+    curl -u $(SONARCLOUD_TOKEN): $SONARCLOUD_URL/api/issues/search?componentKeys=$(SONARCLOUD_PROJECT_KEY) > $(SONARCLOUD_REPORT_PATH)
+    echo "SonarCloud analysis report saved to $(SONARCLOUD_REPORT_PATH)"
+  displayName: 'Save SonarCloud Report'
+
+# Publish the SonarCloud Report as an Artifact (Optional)
+- publish: $(SONARCLOUD_REPORT_PATH)
+  artifact: sonar-report
+  displayName: 'Publish SonarCloud Report Artifact'
 
 - script: |
     echo "Invoking Azure OpenAI GPT Model..."
